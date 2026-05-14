@@ -1,0 +1,98 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Phase 3: Primitive Definitions ---
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Phase 4: Validation Helpers ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email']) &&
+             data.email is string && data.email.size() <= 256 &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 512)) &&
+             (!('theme' in data) || (data.theme in ['light', 'dark', 'system']));
+    }
+
+    function isValidVehicle(data) {
+      return data.keys().hasAll(['id', 'driverId', 'type', 'routeNumber', 'routeName', 'lat', 'lng', 'heading', 'speed', 'crowdLevel', 'status', 'lastUpdated']) &&
+             data.keys().size() == 12 &&
+             data.id is string && data.id.size() <= 128 &&
+             data.driverId == request.auth.uid &&
+             data.type in ['bus', 'ferry'] &&
+             data.routeNumber is string && data.routeNumber.size() <= 32 &&
+             data.routeName is string && data.routeName.size() <= 128 &&
+             data.lat is number &&
+             data.lng is number &&
+             data.heading is number &&
+             data.speed is number &&
+             data.crowdLevel in ['empty', 'moderate', 'crowded', 'full'] &&
+             data.status in ['active', 'delayed', 'inactive'] &&
+             data.lastUpdated is string; // Using string as per types.ts, should ideally check format
+    }
+
+    function isValidSavedRoute(data) {
+      return data.keys().hasAll(['routeId', 'routeName', 'type']) &&
+             data.routeId is string && data.routeId.size() <= 128 &&
+             data.routeName is string && data.routeName.size() <= 128 &&
+             data.type in ['school', 'college', 'tuition', 'work', 'general'];
+    }
+
+    // --- Phase 5: Collection Match Blocks ---
+
+    // Public transit data
+    match /vehicles/{vehicleId} {
+      allow get, list: if true;
+      
+      allow create: if isSignedIn() && 
+                      isValidId(vehicleId) && 
+                      isValidVehicle(incoming());
+                      
+      allow update: if isSignedIn() && 
+                    isValidVehicle(incoming()) && 
+                    existing().driverId == request.auth.uid &&
+                    incoming().driverId == existing().driverId; // Identity lock
+
+      allow delete: if isSignedIn() && 
+                    existing().driverId == request.auth.uid;
+    }
+
+    // User data
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidUser(incoming());
+      allow delete: if isOwner(userId);
+
+      match /savedRoutes/{routeId} {
+        allow list, get: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidSavedRoute(incoming());
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

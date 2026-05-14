@@ -1,0 +1,73 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --color-brand-cyan: #06b6d4;
+  --color-brand-blue: #2563eb;
+  --color-brand-teal: #14b8a6;
+  --color-brand-indigo: #6366f1;
+  --color-brand-purple: #8b5cf6;
+  --color-brand-coral: #f43f5e;
+  --color-brand-mint: #10b981;
+  --color-brand-sky: #0ea5e9;
+  --color-brand-peach: #f97316;
+  --color-brand-rose: #e11d48;
+  --color-bus: #2563eb;
+  --color-ferry: #06b6d4;
+  --color-user: #f97316;
+  --color-bg-base: #f8fafc;
+  --color-bg-surface: #eaf2ff;
+  --color-text-primary: #0f172a;
+
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+  }
+  
+  html, body, #root {
+    @apply h-full w-full bg-[#f8fafc] text-[#0f172a] m-0 p-0 overflow-x-hidden font-sans antialiased selection:bg-brand-blue/30;
+  }
+}
+
+/* Custom Leaflet Premium Light Mode */
+.leaflet-container {
+  background: #f8fafc !important;
+  width: 100%;
+  height: 100%;
+}
+
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out,
+.leaflet-control-attribution {
+  filter: none;
+}
+
+.leaflet-marker-icon {
+  background: none;
+  border: none;
+}
+
+.leaflet-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.leaflet-marker-pane .leaflet-marker-icon.custom-vehicle-marker {
+  transition: transform 2.5s linear !important;
+}
+
+/* Scrollbar Hiding Utilities */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
